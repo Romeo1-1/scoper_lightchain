@@ -964,14 +964,14 @@ hierarchicalClones <- function(db, threshold, method=c("nt", "aa"), linkage=c("s
                                v_call="v_call", j_call="j_call", clone="clone_id", fields=NULL,
                                cell_id=NULL, locus="locus", only_heavy=TRUE, split_light=FALSE,
                                first=FALSE, cdr3=FALSE, mod3=FALSE, max_n=0, nproc=1,
-                               verbose=FALSE, log=NULL, summarize_clones=TRUE, seq_id = "sequence_id") {
+                               verbose=FALSE, log=NULL, summarize_clones=TRUE, cluster_lightchain=FALSE, seq_id = "sequence_id") {
     
     results <- defineClonesScoper(db = db, threshold = threshold, model = "hierarchical", 
                                   method = match.arg(method), linkage = match.arg(linkage), normalize = match.arg(normalize),
                                   junction = junction, v_call = v_call, j_call = j_call, clone = clone, fields = fields,
                                   cell_id = cell_id, locus = locus, only_heavy = only_heavy, split_light = split_light,
                                   first = first, cdr3 = cdr3, mod3 = mod3, max_n = max_n, nproc = nproc,   
-                                  verbose = verbose, log = log, summarize_clones = summarize_clones, 
+                                  verbose = verbose, log = log, summarize_clones = summarize_clones, cluster_lightchain = cluster_lightchain,
                                   seq_id = seq_id)
     
     # return results
@@ -1166,7 +1166,7 @@ defineClonesScoper <- function(db,
                                first = FALSE, cdr3 = FALSE, mod3 = FALSE, max_n = 0, 
                                threshold = NULL, base_sim = 0.95,
                                iter_max = 1000, nstart = 1000, nproc = 1,
-                               verbose = FALSE, log = NULL,
+                               verbose = FALSE, log = NULL, cluster_lightchain = FALSE,
                                summarize_clones = TRUE, seq_id = "sequence_id") {
   
     ### get model
@@ -1339,10 +1339,18 @@ defineClonesScoper <- function(db,
     
     ### for single-cell mode: separates heavy and light chain data frames
     ### performs cloning only on heavy chains
-    if (single_cell) {
-        message("Running defineClonesScoper in single cell mode")
-        db_l <- db[db[[locus]] %in% c("IGK", "IGL", "TRA", "TRG"), , drop=F]
-        db <- db[db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop=F]
+if (single_cell) {
+    message("Running defineClonesScoper in single cell mode")
+    orig_db <- db  # preserve the original db for both subsets
+    if (cluster_lightchain) {
+             message("Clustering with Light Chains (RT)")
+             # Use light chains as the main data frame and heavy chains in db_l
+             db   <- orig_db[orig_db[[locus]] %in% c("IGK", "IGL", "TRA", "TRG"), , drop = FALSE]
+             db_l <- orig_db[orig_db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop = FALSE]
+    } else {
+        # Standard behavior: heavy chains as main, light chains separately stored in db_l
+        db_l <- orig_db[orig_db[[locus]] %in% c("IGK", "IGL", "TRA", "TRG"), , drop = FALSE]
+        db   <- orig_db[orig_db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop = FALSE]
     } else {
         
         ####################################################
