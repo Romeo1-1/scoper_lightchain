@@ -1339,31 +1339,28 @@ defineClonesScoper <- function(db,
     
     ### for single-cell mode: separates heavy and light chain data frames
     ### performs cloning only on heavy chains
-if (single_cell) {
-    message("Running defineClonesScoper in single cell mode")
-    orig_db <- db  # preserve the original db for both subsets
-    if (cluster_lightchain) {
-             message("Clustering with Light Chains (RT)")
-             # Use light chains as the main data frame and heavy chains in db_l
-             db   <- orig_db[orig_db[[locus]] %in% c("IGK", "IGL", "TRA", "TRG"), , drop = FALSE]
-             db_l <- orig_db[orig_db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop = FALSE]
+    if (single_cell) {
+        message("Running defineClonesScoper in single cell mode")
+        orig_db <- db  # preserve the original db for both subsets
+        if (cluster_lightchain) {
+            message("Clustering with Light Chains (RT)")
+            # Use light chains as the main data frame and heavy chains in db_l
+            db   <- orig_db[orig_db[[locus]] %in% c("IGK", "IGL", "TRA", "TRG"), , drop = FALSE]
+            db_l <- orig_db[orig_db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop = FALSE]
+        } else {
+            # Standard behavior: heavy chains as main, light chains separately stored in db_l
+            db_l <- orig_db[orig_db[[locus]] %in% c("IGK", "IGL", "TRA", "TRG"), , drop = FALSE]
+            db   <- orig_db[orig_db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop = FALSE]
+        }
     } else {
-        # Standard behavior: heavy chains as main, light chains separately stored in db_l
-        db_l <- orig_db[orig_db[[locus]] %in% c("IGK", "IGL", "TRA", "TRG"), , drop = FALSE]
-        db   <- orig_db[orig_db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop = FALSE]
-    } else {
-        
-        ####################################################
-        #message("Running defineClonesScoper in bulk mode")
-        # if in bulk mode, only keep heavy chains
         message("Running defineClonesScoper in bulk mode and only keep heavy chains")
         if (!locus %in% colnames(db)) {
             message("... identifying heavy chains with getLocus(v_call).")
             db[[locus]] <- getLocus(db[[v_call]])
         }
-        db <- db[db[[locus]] %in% c("IGH", "TRB", "TRD"), ,drop=FALSE]
-        ####################################################
+        db <- db[db[[locus]] %in% c("IGH", "TRB", "TRD"), , drop = FALSE]
     }
+
     
     if (nrow(db) == 0 ) {
         stop("Cloning requires heavy chain sequences.")
